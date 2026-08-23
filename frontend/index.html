@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DocuChat AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2430;
+    --ink-soft: #5B6472;
+    --paper: #FAF9F5;
+    --paper-raised: #FFFFFF;
+    --border: #E4E1D8;
+    --teal: #0F6E56;
+    --teal-dark: #0A4F3F;
+    --teal-tint: #E1F0EB;
+    --amber: #BA7517;
+    --amber-tint: #FBF0DD;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .brand-text h1 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .brand-text p {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .doc-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--teal-dark);
+    background: var(--teal-tint);
+    border: 1px solid var(--teal);
+    border-radius: 20px;
+    padding: 5px 12px;
+    white-space: nowrap;
+  }
+
+  .upload-zone {
+    margin: 16px 24px 0;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.15s, background 0.15s;
+    background: var(--paper-raised);
+  }
+
+  .upload-zone.dragover {
+    border-color: var(--teal);
+    background: var(--teal-tint);
+  }
+
+  .upload-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+
+  .upload-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .upload-text p {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .upload-text .filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .upload-text .hint {
+    color: var(--ink-soft);
+  }
+
+  input[type=file] { display: none; }
+
+  .upload-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 9px;
+    border: none;
+    background: var(--teal);
+    color: white;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .upload-btn:hover { background: var(--teal-dark); }
+  .upload-btn:disabled { background: var(--border); color: var(--ink-soft); cursor: default; }
+
+  .status-line {
+    margin: 8px 24px 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 16px;
+  }
+
+  .status-line.error { color: #a33; }
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    max-width: 320px;
+    color: var(--ink-soft);
+  }
+
+  .empty-state .icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .empty-state h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 6px;
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .msg-row {
+    display: flex;
+    animation: rise 0.25s ease;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.bot { justify-content: flex-start; }
+
+  .bubble {
+    max-width: 78%;
+    padding: 11px 15px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .msg-row.user .bubble {
+    background: var(--ink);
+    color: var(--paper);
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-row.bot .bubble {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+
+  .bot-block { display: flex; flex-direction: column; gap: 6px; max-width: 78%; }
+
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 4px;
+  }
+
+  .source-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-tint);
+    border: 1px solid #EBCA8F;
+    border-radius: 6px;
+    padding: 3px 8px;
+    cursor: default;
+  }
+
+  .typing {
+    display: flex;
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  footer {
+    padding: 14px 24px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 8px 8px 8px 16px;
+  }
+
+  .input-row:focus-within {
+    border-color: var(--teal);
+  }
+
+  textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 120px;
+    padding: 6px 0;
+    background: transparent;
+    color: var(--ink);
+  }
+
+  textarea::placeholder { color: var(--ink-soft); }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 15px;
+    transition: background 0.15s;
+  }
+
+  .send-btn:hover { background: var(--teal); }
+  .send-btn:disabled { background: var(--border); cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-text">
+        <h1>DocuChat AI</h1>
+        <p>Ask questions grounded in your documents</p>
+      </div>
+    </div>
+    <div class="doc-badge" id="doc-badge">0 chunks indexed</div>
+  </header>
+
+  <div class="upload-zone" id="upload-zone">
+    <div class="upload-icon">📄</div>
+    <div class="upload-text">
+      <p class="hint" id="upload-hint">Drop a PDF here, or choose a file</p>
+    </div>
+    <input type="file" id="pdf-input" accept="application/pdf" />
+    <button class="upload-btn" id="choose-btn" type="button">Choose file</button>
+    <button class="upload-btn" id="upload-btn" type="button" disabled>Upload</button>
+  </div>
+  <div class="status-line" id="status"></div>
+
+  <main id="chat-box">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">💬</div>
+      <h2>Nothing indexed yet</h2>
+      <p>Upload a PDF above, then ask anything about it — answers stay grounded in what's actually in the document.</p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="input-row">
+      <textarea id="question-input" placeholder="Ask something about your document..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" type="button" aria-label="Send">➤</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const API_BASE = window.location.origin;
+  const chatBox = document.getElementById('chat-box');
+  const emptyState = document.getElementById('empty-state');
+  const status = document.getElementById('status');
+  const docBadge = document.getElementById('doc-badge');
+  const uploadZone = document.getElementById('upload-zone');
+  const uploadHint = document.getElementById('upload-hint');
+  const pdfInput = document.getElementById('pdf-input');
+  const chooseBtn = document.getElementById('choose-btn');
+  const uploadBtn = document.getElementById('upload-btn');
+  const questionInput = document.getElementById('question-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  let selectedFile = null;
+
+  function updateBadge(n) {
+    docBadge.textContent = n + (n === 1 ? ' chunk indexed' : ' chunks indexed');
+  }
+
+  chooseBtn.addEventListener('click', () => pdfInput.click());
+
+  pdfInput.addEventListener('change', () => {
+    if (pdfInput.files.length) {
+      selectedFile = pdfInput.files[0];
+      uploadHint.textContent = selectedFile.name;
+      uploadHint.classList.add('filename');
+      uploadBtn.disabled = false;
+    }
+  });
+
+  ['dragover', 'dragenter'].forEach(evt =>
+    uploadZone.addEventListener(evt, (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    uploadZone.addEventListener(evt, (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); })
+  );
+  uploadZone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      selectedFile = file;
+      uploadHint.textContent = file.name;
+      uploadHint.classList.add('filename');
+      uploadBtn.disabled = false;
+    }
+  });
+
+  uploadBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    uploadBtn.disabled = true;
+    status.textContent = 'Uploading and processing...';
+    status.classList.remove('error');
+
+    try {
+      const res = await fetch(API_BASE + '/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+      status.textContent = data.message;
+      const statsRes = await fetch(API_BASE + '/stats');
+      const stats = await statsRes.json();
+      updateBadge(stats.total_chunks);
+    } catch (err) {
+      status.textContent = 'Error: ' + err.message;
+      status.classList.add('error');
+      uploadBtn.disabled = false;
+    }
+  });
+
+  function autoResize() {
+    questionInput.style.height = 'auto';
+    questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+  }
+  questionInput.addEventListener('input', autoResize);
+
+  function addMessage(text, sender) {
+    emptyState.style.display = 'none';
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + sender;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return row;
+  }
+
+  function addBotMessage(text, sources) {
+    emptyState.style.display = 'none';
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    const block = document.createElement('div');
+    block.className = 'bot-block';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    block.appendChild(bubble);
+
+    if (sources && sources.length) {
+      const srcWrap = document.createElement('div');
+      srcWrap.className = 'sources';
+      sources.forEach(s => {
+        const chip = document.createElement('span');
+        chip.className = 'source-chip';
+        chip.textContent = s;
+        srcWrap.appendChild(chip);
+      });
+      block.appendChild(srcWrap);
+    }
+
+    row.appendChild(block);
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.id = 'typing-row';
+    row.innerHTML = '<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  async function sendQuestion() {
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    addMessage(question, 'user');
+    questionInput.value = '';
+    autoResize();
+    addTypingIndicator();
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch(API_BASE + '/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      removeTypingIndicator();
+      if (!res.ok) throw new Error(data.detail || 'Query failed');
+      addBotMessage(data.answer, data.sources);
+    } catch (err) {
+      removeTypingIndicator();
+      addBotMessage('Error: ' + err.message, []);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener('click', sendQuestion);
+  questionInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuestion();
+    }
+  });
+
+  (async () => {
+    try {
+      const statsRes = await fetch(API_BASE + '/stats');
+      const stats = await statsRes.json();
+      updateBadge(stats.total_chunks);
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>
