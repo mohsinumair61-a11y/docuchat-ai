@@ -45,3 +45,11 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+next-env.d.ts
+.vercel
+npm-debug.log*
